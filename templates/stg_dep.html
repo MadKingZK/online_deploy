@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block content %}
+{% load audep_extras%}
+<div class="well" style="margin-top:20px;">
+	<p class="lead">预发布环境
+	</p>
+	<h3 id="grid-options">概况</h3>
+	<div class="table-responsive">
+		<table class="table table-bordered table-striped">
+			<thead>
+				<tr>
+				    <th>平台名称</th>
+					<th>平台编号</th>
+					<th>使用情况</th>
+					<th>使用人</th>
+					<th>开始时间</th>
+					<th>操作</th>
+				</tr>
+			</thead>
+			<tbody>
+			    {% if environments %}
+			    {% for en in environments %}
+				{% if en.name != 'db01' and en.name != 'db02' %}
+				<tr>
+					<th>{{ en.name }}</th>
+					<td>{{ en.shortname }}</td>
+                                    {% if en.status == 0 %}
+					<td class="success"><code>{{ en.hstatus }}</code></td>
+			            {% else %}
+					<td class="danger"><code>{{ en.hstatus }}</code></td>
+			            {% endif %}
+
+					<td>{{ en.user }}</td>
+					<td>{{ en.usetime | timestamp }}</td>
+					{% if en.status == 0 %}
+					<td><a href="{% url 'autodeploy:get_task' en.id %}">{{ en.handle | safe}}</a></td>
+					{% else %}
+                                        <td><a href="{% url 'autodeploy:close_stg' en.id %}">{{ en.handle | safe}}</a></td>
+					{% endif %}
+				</tr>
+				{% endif %}
+				{% endfor %}
+				{% else %}
+				<p>暂无可用的预发平台！</p>
+				{% endif %}
+				
+			</tbody>
+		</table>
+	</div>
+</div>
+{% endblock %}

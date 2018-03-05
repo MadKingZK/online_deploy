@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="box-content">
+<form class="form-horizontal bv-form" action="{% url 'changepass_handle' %}" method="post" id="defaultForm" novalidate="novalidate">
+{% csrf_token %} 
+  <fieldset>
+	<legend>修改密码</legend>
+		<div class="form-group">
+			<label class="col-sm-3 control-label">当前密码</label>
+			<div class="col-sm-5">
+				<input type="password" name="password" class="form-control" data-original-title="" title="" data-bv-field="password">
+			</div>
+		</div>
+		<div class="form-group">
+			<label class="col-sm-3 control-label">新密码</label>
+			<div class="col-sm-5">
+				<input type="password" name="newpassword" class="form-control" data-original-title="" title="" data-bv-field="newpassword">
+			</div>
+		</div>
+		<div class="form-group">
+			<label class="col-sm-3 control-label">确认新密码</label>
+			<div class="col-sm-5">
+				<input type="password" name="confirmpassword" class="form-control" data-original-title="" title="" data-bv-field="confirmpassword">
+			</div>
+		</div>
+		<div style="margin-left:35%">
+			<button type="submit" class="btn btn-primary">&nbsp;&nbsp;确 认&nbsp;&nbsp;</button>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+			<button type="button" class="btn btn-danger">&nbsp;&nbsp;取 消&nbsp;&nbsp;</button>
+		</div>
+  </fieldset>
+</form>
+</div>
+{% endblock %}
+{%block footjs %}
+<script>
+$(function(){
+	$(".btn-danger").click(function(){
+		history.back(-1)
+	})
+})
+</script>
+{%endblock%}
