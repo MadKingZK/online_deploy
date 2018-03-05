@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+{% block content %}
+{% load audep_extras%}
+{% load staticfiles %}
+<div class="row" style="margin-top:30px">
+	<div class="col-xs-12">
+		<div class="box ui-draggable ui-droppable">
+			<div class="box-header">
+				<div class="box-name ui-draggable-handle">
+					<i class="fa fa-table"></i>
+					<span>SA for all</span>
+				</div>
+				<div class="box-icons">
+					<a class="collapse-link">
+						<i class="fa fa-chevron-up"></i>
+					</a>
+					<a class="expand-link">
+						<i class="fa fa-expand"></i>
+					</a>
+					<a class="close-link">
+						<i class="fa fa-times"></i>
+					</a>
+				</div>
+				<div class="no-move"></div>
+			</div>
+			<div class="box-content no-padding">
+				<div class="bs-callout">
+					<button data-dismiss="alert" class="close">×</button>
+					<h4>{{environment.name}}上线</h4>
+					<p></p><p></p>
+					<p><strong>平台编号：</strong>{{ environment.shortname }}</p>
+					<p><strong>项目名称：</strong>{{ project.shortname }}</p>
+					<p><strong>分支名称：</strong>{{ gitbranch }}</p>
+					<p></p>
+					<p></p>
+					<div id="proj-build"><i class="fa fa-bullhorn"></i>
+					    <p id='build-notify'>项目编译中，请耐心等待...</p>
+					    <div id='build-preload' style="position:absolute;">
+				          <img alt="preloader" class="devoops-getdata" src="{% static 'img/devoops_getdata.gif' %}">
+			            </div>
+			        </div>
+			        <div id='proj-build-result'></div>
+				</div>
+				<div id="hosts-dep" style="margin-top:30px;display:none;">
+				<h4>上线结果</h4>
+				<legend></legend>
+				<table class="table table-striped table-bordered table-hover table-heading no-border-bottom">
+					<thead>
+						<tr>
+							<th>主机名</th>
+							<th>ip</th>
+							<th>状态</th>
+							<th>操作</th>
+						</tr>
+					</thead>
+					<tbody>
+					{% if hosts %}
+					{% for h in hosts %}
+						<tr>
+							<td>{{ h.hostname }}</td>
+							<td>{{ h.ip }}</td>
+							<td id="host-{{ h.id }}" class="active"><center><img  src="{% static 'img/progress-b.gif' %}"></center></td>
+							<td><a href="{% url 'autodeploy:ajx_get_log' pid=project.id hid=h.id tid=tid%}" target=_blank>查看日志</a></td>
+						</tr>
+					{% endfor %}
+					{% endif %}
+					</tbody>
+				</table>
+				<div class="col-sm-9 col-sm-offset-3" style="margin-top:20px;">
+				    <button id='btn-result' class="btn btn-primary" type="button">返回</button>
+				</div>
+				</div>
+
+
+			</div>
+		</div>
+	</div>
+</div>
+<textarea readonly="readonly" style="margin-top: 20px;clear: both;background-color: #000;color:#fff;font-size: 1em;width: 100%;height:800px; " class="log-container"></textarea>
+
+{% endblock %}
+{% block footjs %}
+<script type="text/javascript">
+$(function(){
+	function getOneLineLog(){
+		if(!window.intervalGetLog_autoIncrement){
+			window.intervalGetLog_autoIncrement = 1;
+		}
+
+		$.ajax({
+			async:false,
+			url: '/autodeploy/ajxpushlog/{{ tid }},'+window.intervalGetLog_autoIncrement,
+			type:'get',
+			dataType:'json',
+			success: function(json){
+				if(json.success == 1){
+					window.intervalGetLog_autoIncrement+=json.read_num;
+					$('.log-container').append(json.data).scrollTop(1000000);
+//				}else if(json.success == 2){
+
+				}else{
+					if(intervalGetLog){
+						window.intervalGetLog_autoIncrement+=json.read_num;
+						$('.log-container').append(json.data).scrollTop(1000000);
+						$('.log-container').append(json.data).scrollTop(1000000);
+						clearInterval(window.intervalGetLog);
+					}
+				}
+
+			},
+			error: function (e){
+				if(window.console){
+					console.debug(e);
+				}
+				if(intervalGetLog){
+					clearInterval(window.intervalGetLog);
+				}
+				alert('加载日志失败,请手动加载');
+			}
+		});
+
+	}
+
+	// 定时拉日志(one line)
+	window.intervalGetLog = window.setInterval(function (){getOneLineLog()}, 1000);
+
+
+$.ajax({
+    url: "{% url 'autodeploy:ajx_start_dep' tid %}",
+    type: 'GET',
+    success: function(data){ 
+        if(data == 0){
+            $('#build-notify').replaceWith('<code style="color:green;">项目编译成功</code>');
+            $('#build-preload').css('display','none');
+            $('#hosts-dep').css('display','block');
+            {% for host in hosts%}
+                $.get("{% url 'autodeploy:ajx_distribute_host' tid=tid hid=host.id %}",
+                     function(data){
+                     	if(data == 0){
+                                $("#host-{{host.id}}").addClass('success');
+                     		$("#host-{{host.id}}").html('<code style="color:green;">部署成功</code>');
+                     	}else{
+                                $("#host-{{host.id}}").addClass('danger');
+                     		$("#host-{{host.id}}").html('<code>'+data+'</code>');
+                     	}                	      
+                 });
+            {% endfor %}
+
+        }else{
+            $('#build-notify').replaceWith('<code>项目编译失败</code>');
+            $('#build-preload').css('display','none');
+            $('#proj-build-result').html("<pre style='background-color:#ededed;border:none;'>"+data+"</pre>")
+        }
+    },
+    error: function(data) {
+
+//		$.ajax({
+//			url: "/autodeploy/alert_handle/{{ tid }}",
+//			type: 'GET',
+//			success: function (data) {
+//				if(data){
+//					alert(data);
+//				}
+//				else
+//				alert('服务器提出了一个问题，请找运维寻求答案！'); //or whatever
+//			}
+//		});
+
+
+		alert('服务器提出了一个问题，请找运维寻求答案！'); //or whatever
+
+        return false;
+    }
+});
+
+// $.get("{% url 'autodeploy:ajx_start_dep' tid %}",
+//       function(data){ 
+//         if(data == 0){
+//             $('#build-notify').replaceWith('<code style="color:green;">项目编译成功</code>');
+//             $('#build-preload').css('display','none');
+//             $('#hosts-dep').css('display','block');
+//             {% for host in hosts%}
+//                 $.get("{% url 'autodeploy:ajx_distribute_host' tid=tid hid=host.id %}",
+//                      function(data){
+//                      	if(data == 0){
+//                                 $("#host-{{host.id}}").addClass('success');
+//                      		$("#host-{{host.id}}").html('<code style="color:green;">部署成功</code>');
+//                      	}else{
+//                                 $("#host-{{host.id}}").addClass('danger');
+//                      		$("#host-{{host.id}}").html('<code>'+data+'</code>');
+//                      	}                	      
+//                  });
+//             {% endfor %}
+
+//         }else{
+//             $('#build-notify').replaceWith('<code>项目编译失败</code>');
+//             $('#build-preload').css('display','none');
+//             $('#proj-build-result').html("<pre style='background-color:#ededed;border:none;'>"+data+"</pre>")
+//         }
+//       });
+$('#btn-result').click(function(){
+	window.location.href="/autodeploy/stgdep";
+})
+
+});
+
+
+</script>
+{% endblock %}
