@@ -82,9 +82,9 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'opsdb',
         'USER': 'root',
-        'PASSWORD': 'huoqiu2014',
-        'HOST': 'db02',
-        'POST': '9316'
+        'PASSWORD': '',
+        'HOST': 'db',
+        'POST': '3306'
     }
 }
 
